@@ -772,8 +772,8 @@ class FedCBO_NN:
             logging.info('total elapsed time for local sgd = {}'.format(ending_local_sgd - starting_local_sgd))
 
             # Local aggregation at time step t
-            with open(os.path.join(self.train_init.output_path, 'check_state.txt'), 'a') as f:
-                f.write('Communication round: {} \n'.format(t))
+            # with open(os.path.join(self.train_init.output_path, 'check_state.txt'), 'a') as f:
+            #     f.write('Communication round: {} \n'.format(t))
             with open(os.path.join(self.train_init.output_path, 'loss.txt'), 'a') as f:
                 f.write('Communication round: {} \n'.format(t))
             self.local_aggregation(t=t)
