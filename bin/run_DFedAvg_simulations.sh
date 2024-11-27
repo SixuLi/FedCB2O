@@ -72,7 +72,7 @@ do
  	--N 50 \
  	--M 20 \
  	--num_participant_per_round 50 \
- 	--T 101 \
+ 	--T 151 \
  	--seed "$seed" \
  	--batch_size 64 \
   --bias \
