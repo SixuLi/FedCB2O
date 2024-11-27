@@ -754,7 +754,7 @@ class FedCBO_NN:
 
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/CBO_Bilevel_OPT')
+            os.chdir('/content/drive/MyDrive/FedCB2O')
             logging.info(os.getcwd())
 
             with mp.get_context('spawn').Pool() as pool:
@@ -772,8 +772,8 @@ class FedCBO_NN:
             logging.info('total elapsed time for local sgd = {}'.format(ending_local_sgd - starting_local_sgd))
 
             # Local aggregation at time step t
-            # with open(os.path.join(self.train_init.output_path, 'check_state.txt'), 'a') as f:
-            #     f.write('Communication round: {} \n'.format(t))
+            with open(os.path.join(self.train_init.output_path, 'check_state.txt'), 'a') as f:
+                f.write('Communication round: {} \n'.format(t))
             with open(os.path.join(self.train_init.output_path, 'loss.txt'), 'a') as f:
                 f.write('Communication round: {} \n'.format(t))
             self.local_aggregation(t=t)
@@ -865,7 +865,7 @@ class FedCBO_NN:
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/CBO_Bilevel_OPT')
+            os.chdir('/content/drive/MyDrive/FedCB2O')
             logging.info(os.getcwd())
 
             logging.info('Check multi-processing for model evaluation.')
@@ -993,7 +993,7 @@ class FedCBO_NN:
             curr_list_test = [self.get_agent_dataloader(i, tag='test') for i in self.agents_idx]
             for local_model in cur_agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/CBO_Bilevel_OPT')
+            os.chdir('/content/drive/MyDrive/FedCB2O')
             logging.info(os.getcwd())
             with mp.get_context('spawn').Pool(processes=5) as pool:
                 eval_results = pool.starmap(mp_evaluate,
@@ -1084,7 +1084,7 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/CBO_Bilevel_OPT')
+            os.chdir('/content/drive/MyDrive/FedCB2O')
             logging.info(os.getcwd())
 
             logging.info('Check multi-processing for model evaluation.')
@@ -1273,7 +1273,7 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             curr_list_test = [self.get_agent_dataloader(i, tag='test') for i in self.agents_idx]
             for local_model in cur_agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/CBO_Bilevel_OPT')
+            os.chdir('/content/drive/MyDrive/FedCB2O')
             logging.info(os.getcwd())
             with mp.get_context('spawn').Pool(processes=5) as pool:
                 eval_results = pool.starmap(mp_evaluate,
