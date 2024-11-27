@@ -15,7 +15,7 @@ from matplotlib.lines import lineStyles
 from scipy.stats import entropy
 from sympy.abc import alpha
 
-from Federated_Learning.src.objective_func import L, contrained_OPT_obj
+from src.objective_func import L, contrained_OPT_obj
 
 sns.set_style('darkgrid')
 sns.set_context('poster')

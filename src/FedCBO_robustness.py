@@ -19,9 +19,9 @@ from torchvision import datasets, transforms
 from PIL import Image
 from typing import Tuple
 
-from Federated_Learning.src.model import CNN_CIFAR10, CNN_EMNIST
-from Federated_Learning.src.dataset import RotatedCIFAR10, CustomDataset, MyCIFAR10, MyEMNIST
-from Federated_Learning.src.utils.util import chunkify, split_list_uneven, AverageMeter
+from src.model import CNN_CIFAR10, CNN_EMNIST
+from src.dataset import RotatedCIFAR10, CustomDataset, MyCIFAR10, MyEMNIST
+from src.utils.util import chunkify, split_list_uneven, AverageMeter
 
 import torch.multiprocessing as mp
 
