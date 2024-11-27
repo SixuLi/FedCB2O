@@ -184,7 +184,7 @@ do
  	--optimizer 'SimpleSGD' \
  	--lr 0.004 \
  	--momentum 0.9 \
- 	--record_time_freq 10 \
+ 	--record_time_freq 1 \
  	--agent_selection_method 'prob' \
  	--moving_avg_alpha 0.5 \
  	--val_set_prop 0.2 \
