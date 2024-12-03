@@ -2,30 +2,21 @@ import numpy as np
 import logging
 import tqdm
 import copy
-from sklearn.model_selection import train_test_split
 import os
 import time
-import jenkspy
 import math
 from scipy.stats import entropy
 
 import torch.utils.data
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions.multivariate_normal import MultivariateNormal
-from torch.utils import data
-from torch.utils.data import Subset
-from torchvision import datasets, transforms
-from PIL import Image
-from typing import Tuple
+from torchvision import transforms
 
 from src.model import CNN_CIFAR10, CNN_EMNIST
 from src.dataset import RotatedCIFAR10, CustomDataset, MyCIFAR10, MyEMNIST
 from src.utils.util import chunkify, split_list_uneven, AverageMeter
 
 import torch.multiprocessing as mp
-
-import matplotlib.pyplot as plt
 
 def get_optimizer(args, model):
     logging.info('Optimizer is {}'.format(args.optimizer))
@@ -54,20 +45,15 @@ def get_lr_scheduler(args, optimizer):
         return torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.lr_milestones,
                                                     gamma=args.lr_gamma)
     elif args.lr_scheduler == 'ExponentialLR':
-        #       decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
-        # Code from IFCA repo (https://github.com/jichan3751/ifca/blob/61e44b8977a53c25368e8120aac6a505496ebbdf/cifar/cifar10.py#L122)
-        return torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=.1)  # , last_epoch=decay_steps
+        return torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=.1)
     else:
         raise NotImplementedError
 
 def local_sgd_function_to_pass_to_mp(agent_idx, local_model, dataloader, args):
     if agent_idx in args.benign_agents_indices:
         num_epochs = args.benign_agent_local_epochs
-        # print('Num of local epochs of benign agent = ', num_epochs)
     else:
         num_epochs = args.mali_agent_local_epochs
-        # print('Num of local epochs of malicious agent = ', num_epochs)
-    # num_epochs = args.local_epochs
     local_model.cuda()
 
     optimizer = get_optimizer(args, local_model)
@@ -284,42 +270,7 @@ class FedCBO_NN:
                 cluster_ninety_rot = cluster_idx
             else:
                 raise NotImplementedError
-            if self.args.data_name == 'cifar10':
-                mean_cifar = (0.485, 0.456, 0.406)
-                std_cifar = (0.229, 0.224, 0.225)
-
-                self.train_transform = transforms.Compose([
-                    transforms.RandomCrop(size=(24, 24)),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean_cifar, std_cifar)
-                ])
-                self.test_transform = transforms.Compose([
-                    transforms.RandomCrop(size=(24, 24)),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean_cifar, std_cifar)
-                ])
-                if self.args.adversarial:
-                    fullTrainSet = MyCIFAR10(args=self.args, train=True, download=True,
-                                             transform=self.train_transform,
-                                             times_ninety_rot=cluster_ninety_rot,
-                                             source_class=self.args.source_class,
-                                             subset_size=self.num_total_data,
-                                             seed=self.seed)
-                    testset = MyCIFAR10(args=self.args, train=False, download=True,
-                                        transform=self.test_transform, times_ninety_rot=cluster_ninety_rot)
-                else:
-                    fullTrainSet = MyCIFAR10(args=self.args, train=True, download=True,
-                                              transform=self.train_transform,
-                                              times_ninety_rot=cluster_ninety_rot,
-                                              subset_size=self.num_total_data,
-                                              seed=self.seed)
-                    testset = MyCIFAR10(args=self.args, train=False, download=True,
-                                         transform=self.test_transform,
-                                         times_ninety_rot=cluster_ninety_rot)
-
-            elif self.args.data_name == 'emnist':
+            if self.args.data_name == 'emnist':
                 self.transform = transforms.Compose([transforms.ToTensor()])
                 if self.args.adversarial:
                     fullTrainSet = MyEMNIST(args=self.args, train=True, download=True,
@@ -342,25 +293,6 @@ class FedCBO_NN:
             train_val_data.append(fullTrainSet)
             test_data.append(testset)
 
-        # Visualize EMNIST dataset to check how the labels are assigned.
-        # train_loader = torch.utils.data.DataLoader(fullTrainSet, batch_size=64, shuffle=True)
-        #
-        # n_images = 16
-        # rand_imgs = next(iter(train_loader))
-        # ints = range(16)
-        #
-        # fig, ax_arr = plt.subplots(4,4)
-        # ax_arr = ax_arr.flatten()
-        #
-        # for n, ix in enumerate(ints):
-        #     img = rand_imgs[0][ix]
-        #     ax_arr[n].imshow(img[0].detach().cpu().numpy().T, cmap='Greys')
-        #     ax_arr[n].axis('off')
-        # plt.tight_layout()
-        # plt.savefig(os.path.join(self.train_init.output_path, 'dataset_visual.png'))
-        # plt.show()
-        # print('Labels = ', rand_imgs[1][:16])
-
         train_val_dataset = {}
         train_val_dataset['full_data_indices'], train_val_dataset['cluster_assign'] = \
             self._setup_dataset(len(fullTrainSet), self.args.p, self.args.N)
@@ -371,8 +303,6 @@ class FedCBO_NN:
             self.benign_agents_indices_lists, self.malicious_agents_indices_lists = self.separate_agents()
             self.benign_agents_indices = copy.deepcopy(self.benign_agents_indices_lists).reshape(-1)
             self.malicious_agents_indices = copy.deepcopy(self.malicious_agents_indices_lists).reshape(-1)
-            print('Indices of benign agents: ', self.benign_agents_indices)
-            print('Indices of malicious agents: ', self.malicious_agents_indices)
             self.args.benign_agents_indices = self.benign_agents_indices
             self.args.malicious_agents_indices = self.malicious_agents_indices
 
@@ -397,14 +327,12 @@ class FedCBO_NN:
             targets = data.targets[data_indices.astype(int)]
 
             if agent_idx in self.benign_agents_indices:
-                # if self.args.data_name == 'emnist':
 
                 # uniformly over each class
                 train_idx = None
                 val_idx = None
                 for i in range(self.args.num_classes):
                     class_i_indices = (targets == i).nonzero(as_tuple=False).squeeze()
-                    # print('Agent {}: indices of data with label={}: {}'.format(agent_idx+1, i, class_i_indices))
                     perturbed_class_i_indices = np.random.permutation(class_i_indices)
 
                     # Remove 1-prop_source_class proportion of data points in source_class
@@ -423,20 +351,6 @@ class FedCBO_NN:
                     else:
                         train_idx = np.concatenate((train_idx, train_class_i_idx), axis=None)
                         val_idx = np.concatenate((val_idx, val_class_i_idx), axis=None)
-
-            # elif self.args.data_name == 'cifar10':
-            #     source_class_indices = (targets == self.args.source_class).nonzero(as_tuple=False).squeeze()
-            #     perturbed_source_class_indices = np.random.permutation(source_class_indices)
-            #     removed_source_class_indices = perturbed_source_class_indices[:self.args.prop_source_class*len(perturbed_source_class_indices)]
-            #
-            #     perturbed_data_indices = np.random.permutation(len(data_indices))
-            #     if self.args.val_set_prop > 0:
-            #         num_val_set = int(self.args.val_set_prop * len(data_indices))
-            #         train_idx = perturbed_data_indices[:-num_val_set]
-            #         val_idx = perturbed_data_indices[-num_val_set:]
-            #     else:
-            #         train_idx = perturbed_data_indices
-            #         val_idx = np.array([-1])
 
                 train_data_indices.append(data_indices[train_idx])
                 val_data_indices.append(data_indices[val_idx])
@@ -488,36 +402,6 @@ class FedCBO_NN:
         print('Num local training data list:', self.num_local_train_data_list)
         print('Num local validation data list:', self.num_local_val_data_list)
 
-        # Understand the distribution of EMNIST dataset
-        # for agent_idx in self.agents_idx:
-        #     train_class_total = [0] * self.args.num_classes
-        #     train_dataloader = self.get_agent_dataloader(agent_idx=agent_idx, tag='train')
-        #     for batch_idx, (images, labels) in enumerate(train_dataloader):
-        #         # print('Total number of training data:', len(labels))
-        #         for i in range(self.args.num_classes):
-        #             class_i_indices = (labels == i).nonzero(as_tuple=False).squeeze()
-        #             if class_i_indices.ndim == 0:
-        #                 continue
-        #             else:
-        #                 train_class_total[i] += len(class_i_indices)
-        #
-        #     val_class_total = [0] * self.args.num_classes
-        #     val_dataloader = self.get_agent_dataloader(agent_idx=agent_idx, tag='val')
-        #     for batch_idx, (images, labels) in enumerate(val_dataloader):
-        #         # print('Total number of validation data:', len(labels))
-        #         for i in range(self.args.num_classes):
-        #             class_i_indices = (labels == i).nonzero(as_tuple=False).squeeze()
-        #             if class_i_indices.ndim == 0:
-        #                 continue
-        #             else:
-        #                 val_class_total[i] += len(class_i_indices)
-        #     print('Training data distribution of agent {}:'.format(agent_idx))
-        #     for i, num_data in enumerate(train_class_total):
-        #         print('Num of class {} data = {}'.format(i, num_data))
-        #     print('Validation data distribution of agent {}:'.format(agent_idx))
-        #     for i, num_data in enumerate(val_class_total):
-        #         print('Num of class {} data = {}'.format(i, num_data))
-
     def separate_agents(self):
         # Calculate the number of agents per cluster
         agents_per_cluster = self.N // self.p
@@ -544,7 +428,6 @@ class FedCBO_NN:
             benign_indices.append(benign_cluster_indices)
 
         return np.array(benign_indices), np.array(malicious_indices)
-
 
     def _setup_dataset(self, num_data, p, N, random=True):
         data_indices = []
@@ -578,9 +461,6 @@ class FedCBO_NN:
             data_indices += ll2
             cluster_assign += [p_i for _ in range(agents_per_cluster)]
 
-        # print('data_indices:', data_indices)
-        # print('Overall list of num local data', overall_lst_agents_num_local_data)
-
         data_indices = np.array(data_indices, dtype=object)
         cluster_assign = np.array(cluster_assign)
         assert data_indices.shape[0] == cluster_assign.shape[0]
@@ -612,8 +492,6 @@ class FedCBO_NN:
             logging.info('Label poisoning success!!!')
         else:
             logging.info('Label poisoning fail!!!')
-        # logging.info(len(self.dataset['train']['data'][cluster_idx].dataset.targets[data_indices]))
-        # logging.info(self.dataset['train']['data'][cluster_idx].dataset.targets[data_indices])
 
     def check_num_class(self, agent_idx, class_label):
         cluster_idx = self.dataset['train_val']['cluster_assign'][agent_idx]
@@ -638,9 +516,6 @@ class FedCBO_NN:
                                     data.targets[data_idx] != source_class_label]
 
         dataset['full_data_indices'][agent_idx] = np.array(non_source_class_indices)
-
-        # logging.info('Check whether successfully remove source class label.')
-        # logging.info(data.targets[dataset['full_data_indices'][agent_idx]])
 
     def remove_malicious_agents(self):
         self.agents_idx = self.benign_agents_indices
@@ -671,13 +546,7 @@ class FedCBO_NN:
             images, targets = data.data[data_indices], data.targets[data_indices]
             batch_size = self.args.batch_size
 
-        if self.args.data_name == 'cifar10':
-            if tag in ['train', 'val']:
-                local_data = CustomDataset(images, torch.LongTensor(targets), self.train_transform)
-            elif tag == 'test':
-                local_data = CustomDataset(images, torch.LongTensor(targets), self.test_transform)
-        else:
-            local_data = torch.utils.data.TensorDataset(images, targets)
+        local_data = torch.utils.data.TensorDataset(images, targets)
         dataloader = torch.utils.data.DataLoader(local_data, batch_size=batch_size, shuffle=True)
 
         return dataloader
@@ -699,29 +568,6 @@ class FedCBO_NN:
             avg_weight /= torch.sum(mu)
             avg_bias /= torch.sum(mu)
         return (avg_weight, avg_bias)
-
-
-    def agents_selection_ranking(self, agent_idx):
-        if np.any(self.selected_time[agent_idx] == 0) == True:
-            if len(np.where(self.selected_time[agent_idx] == 0)[0]) >= self.M:
-                return np.random.choice(np.where(self.selected_time[agent_idx] == 0)[0], self.M, replace=False)
-            else:
-                return np.where(self.selected_time[agent_idx] == 0)[0]
-        else:
-            selection_reward = copy.deepcopy(self.estimate_selection_reward[agent_idx])
-            # mask = selection_reward != -np.inf
-            # selection_reward[agent_idx] = np.min(selection_reward[mask])
-            if self.args.agent_selection_ranking_type == 'clustering':
-                breaking_point = jenkspy.jenks_breaks(selection_reward, n_classes=2)[1]
-                agent_idx_large_reward = np.where(selection_reward >= breaking_point)[0]
-                # prob = selection_reward[agent_idx_large_reward]
-                # prob /= prob.sum()
-                if len(agent_idx_large_reward) >= self.M:
-                    return np.random.choice(agent_idx_large_reward, self.M, replace=False)
-                else:
-                    return agent_idx_large_reward
-            elif self.args.agent_selection_ranking_type == 'oracle':
-                return np.random.choice(selection_reward.argsort()[-self.N // 2:], self.M, replace=False)
 
     def agents_selection_prob(self, agent_idx):
         if np.any(self.selected_time[agent_idx] == 0) == True:
@@ -754,7 +600,7 @@ class FedCBO_NN:
 
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O')
+            os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
             logging.info(os.getcwd())
 
             with mp.get_context('spawn').Pool() as pool:
@@ -835,11 +681,7 @@ class FedCBO_NN:
                 selection_prop[np.argwhere(self.agents_idx == agent_idx)[0][0]] = 0
                 A_t = np.random.choice(self.agents_idx, self.M, replace=False, p=selection_prop)
             else:
-                if self.args.agent_selection_method == 'prob':
-                    A_t = self.agents_selection_prob(agent_idx=agent_idx)
-                elif self.args.agent_selection_method == 'clustering':
-                    A_t = self.agents_selection_ranking(agent_idx=agent_idx)
-
+                A_t = self.agents_selection_prob(agent_idx=agent_idx)
             # Update number of agents' selected time
             self.selected_time[agent_idx][A_t] += 1
 
@@ -865,7 +707,7 @@ class FedCBO_NN:
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O')
+            os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
             logging.info(os.getcwd())
 
             logging.info('Check multi-processing for model evaluation.')
@@ -896,12 +738,8 @@ class FedCBO_NN:
             # Assume malicious agents know who are in the same cluster as them and they could collaborate
             if agent_idx in self.malicious_agents_indices:
                 cluster_idx = self.dataset['train_val']['cluster_assign'][agent_idx]
-                # print('Cluster index of malicious agent {}: {}'.format(agent_idx, cluster_idx))
                 mali_agents_in_same_cluster = self.malicious_agents_indices_lists[cluster_idx]
                 benign_agents_in_same_cluster = self.benign_agents_indices_lists[cluster_idx]
-
-                # print('Malicious agents in the same cluster:', mali_agents_in_same_cluster)
-                # print('Benign agents in the same cluster:', benign_agents_in_same_cluster)
 
                 idx = np.where(mali_agents_in_same_cluster == agent_idx)
                 mali_agents_in_same_cluster = np.delete(mali_agents_in_same_cluster, idx)
@@ -938,12 +776,11 @@ class FedCBO_NN:
                     idx = np.argwhere(self.benign_agents_indices == agent_idx)[0][0]
                     agents_avg_loss = np.array(list(eval_results_avg_loss[idx].values())) # with size new_A_t.size
                     agents_classwise_loss = np.array(list(eval_results_classwise_loss[idx].values()))  # with size num_classes X new_A_t.size
-                    # print('idx = ', idx)
+
                     for i, model in enumerate(thetas):
                         validation_acc, validation_loss, _ = eval_results_dict[idx][new_A_t[i]]
                         val_loss = validation_loss.avg
                         agent_vali_loss.append(val_loss)
-                        # reward_i = 1 / (validation_loss.avg + 1e-9)
                         reward_i = math.exp(-val_loss / self.args.Temp)
                         reward[i] = reward_i
 
@@ -1054,10 +891,7 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
                 selection_prop[idx] = 0
                 A_t = np.random.choice(self.agents_idx, self.M, replace=False, p=selection_prop)
             else:
-                if self.args.agent_selection_method == 'prob':
-                    A_t = self.agents_selection_prob(agent_idx=agent_idx)
-                elif self.args.agent_selection_method == 'ranking':
-                    A_t = self.agents_selection_ranking(agent_idx=self.agents_idx)
+                A_t = self.agents_selection_prob(agent_idx=agent_idx)
 
             # Update number of agents' selected time
             self.selected_time[agent_idx][A_t] += 1
@@ -1084,7 +918,7 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O')
+            os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
             logging.info(os.getcwd())
 
             logging.info('Check multi-processing for model evaluation.')
@@ -1114,12 +948,8 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             # Assume malicious agents know who are in the same cluster as them and they could collaborate
             if agent_idx in self.malicious_agents_indices:
                 cluster_idx = self.dataset['train_val']['cluster_assign'][agent_idx]
-                # print('Cluster index of malicious agent {}: {}'.format(agent_idx, cluster_idx))
                 mali_agents_in_same_cluster = self.malicious_agents_indices_lists[cluster_idx]
                 benign_agents_in_same_cluster = self.benign_agents_indices_lists[cluster_idx]
-
-                # print('Malicious agents in the same cluster:', mali_agents_in_same_cluster)
-                # print('Benign agents in the same cluster:', benign_agents_in_same_cluster)
 
                 idx = np.where(mali_agents_in_same_cluster == agent_idx)
                 mali_agents_in_same_cluster = np.delete(mali_agents_in_same_cluster, idx)
@@ -1167,7 +997,6 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
                                 self.estimate_selection_reward[agent_idx][new_A_t[i]]
 
                 if t < self.args.G_func_starting_time: # Try to "utilize" the malicious agent to get faster convergence
-                    # logging.info('Use average loss as weighted average criterion!!!!')
                     # Record the maximum difference for class-wise loss (but not using it for weight average criterion)
                     idx = np.argwhere(new_A_t == agent_idx)[0][0]
                     cur_agent_classwise_loss = agents_classwise_loss[idx]  # size: num_classes
@@ -1193,7 +1022,6 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
                             f.write('The negative entropy of class-wise loss of agents being selected: {}\n'.format(np.round(weighted_avg_criterion, decimals=4).tolist()))
 
                     elif self.args.G_func == 'max_diff':
-                        # logging.info('Use max_diff as weighted average criterion!!!')
                         idx = np.argwhere(new_A_t == agent_idx)[0][0]
                         cur_agent_classwise_loss = agents_classwise_loss[idx] # size: num_classes
                         cur_agent_classwise_loss = np.tile(cur_agent_classwise_loss[np.newaxis, :], (len(new_A_t), 1))
@@ -1205,15 +1033,8 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
                             f.write('Maximum difference class-wise loss evaluating on dataset from agent {}: {}\n'.format(
                                 agent_idx + 1, np.round(self.max_diff[agent_idx], decimals=4).tolist()))
 
-                        # if self.args.is_oracle:
-                        #     selected_benign_agent_idx = weighted_avg_criterion.argsort()[:int(self.N / self.p * (1-self.args.malicious_prop))]
-                        #     weighted_avg_criterion[selected_benign_agent_idx] = 0
                     elif self.args.G_func == 'avg_loss':
                         weighted_avg_criterion = agents_avg_loss
-                        # selected_benign_agent_idx = weighted_avg_criterion.argsort()[:int(self.N / self.p * (1-self.args.malicious_prop))]
-                        # weighted_avg_criterion[selected_benign_agent_idx] = 0
-
-                # classwise_loss_entropy = entropy(agents_classwise_loss[quantile_selected_agents_idx], axis=1) # with quantile_selected_agents_idx.size
 
                 weighted_avg_criterion -= np.min(weighted_avg_criterion)
                 mu = torch.exp(torch.tensor([-self.Alpha]) * torch.from_numpy(weighted_avg_criterion))

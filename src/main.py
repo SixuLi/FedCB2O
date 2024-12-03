@@ -1,31 +1,25 @@
-import numpy as np
 import argparse
 import os
 import logging
-import matplotlib.pyplot as plt
-import seaborn as sns
 import torch
 import imageio.v2 as imageio
 
 import src.init as init
-from src.CBO_bilevel_opt import CBO_bilevel
 from src.FedCBO_robustness import FedCBO_NN, FedCBO_Bilevel_NN
-from src.FedCBO_dataset_init_test import FedCBO_Data_Init_Test
-from src.visualization import particles_position_vis_1d, vis_constrained_set
 from src.init import make_dirs
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment_name', type=str, default='test')
-    parser.add_argument('--model_name', type=str, default='CNN_CIFAR10', choices=['CNN_CIFAR10', 'CNN_EMNIST'])
+    parser.add_argument('--model_name', type=str, default='CNN_EMNIST', choices=['CNN_EMNIST'])
     parser.add_argument('--result_path', type=str, default='./results')
     parser.add_argument('--data_path', type=str, default='./data')
-    parser.add_argument('--data_name', type=str, default='1d_data', choices=['synthetic_data', 'mnist', 'cifar10', 'emnist'])
-    parser.add_argument('--num_classes', type=int, default=10)
+    parser.add_argument('--data_name', type=str, default='emnist', choices=['emnist'])
+    parser.add_argument('--num_classes', type=int, default=47)
     parser.add_argument('--alg', type=str, default='FedCBO', choices=['FedCBO', 'FedAvg', 'FedCBO_Bilevel', 'test'])
 
-    parser.add_argument('--seed', type=int, default=2023)
+    parser.add_argument('--seed', type=int, default=2024)
     parser.add_argument('--p', type=int, default=2, help='Number of clusters.')
     parser.add_argument('--N', type=int, default=100, help='Total number of particles.')
     parser.add_argument('--M', type=int, default=20, help='Number of particles involved in one round.')
@@ -40,10 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--Beta', type=float, default=0.05)
     parser.add_argument('--Temp', type=float, default=0.25)
     parser.add_argument('--G_func', type=str, default='entropy', choices=['entropy', 'max_diff', 'avg_loss'])
-    parser.add_argument('--d', type=int, default=1, help='Dimension of model parameters.')
-    parser.add_argument('--global_min', type=float, default=0)
     parser.add_argument('--init_type', type=str, default='uniform', choices=['uniform', 'gaussian'])
-    parser.add_argument('--opt_type', type=str, default='unconstrained', choices=['constrained', 'unconstrained'])
 
     parser.add_argument('--prop_to_full_dataset', type=float, nargs='+', default=[])
     parser.add_argument('--agents_per_cluster', type=int, nargs='+', default=[])
@@ -76,8 +67,7 @@ if __name__ == '__main__':
     parser.add_argument('--uniform_weight', default=False, action='store_true')
     parser.add_argument('--uniform_weight_with_agent_selection', default=False, action='store_true')
     parser.add_argument('--only_weighted_avg', default=False, action='store_true')
-    parser.add_argument('--agent_selection_ranking_type', type=str, default='clustering', choices=['oracle', 'clustering'])
-    parser.add_argument('--agent_selection_method', type=str, default='clustering', choices=['clustering', 'prob'])
+    parser.add_argument('--agent_selection_method', type=str, default='prob', choices=['prob'])
     parser.add_argument('--moving_avg_alpha', type=float, default=0.5)
 
     parser.add_argument('--adversarial', default=False, action='store_true')
@@ -100,57 +90,17 @@ if __name__ == '__main__':
 
     train_init = init.Init(args=args)
 
-    if args.data_name == 'synthetic_data':
-        for seed in range(0, args.num_seeds):
-            args.seed = seed
-            logging.info("Seed {}".format(args.seed))
-            train_init = init.Init(args=args)
 
-            cbo = CBO_bilevel(train_init=train_init, args=args)
-            cbo.run_optimization()
-            print('Consensus point:', cbo.consensus_point)
+    os.environ['CUDA_VISBLE_DEVICES'] = args.gpu_ids
+    args.gpu_id_list = [int(s) for s in args.gpu_ids.split(',')]
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    if args.alg == 'FedCBO':
+        FedCBO = FedCBO_NN(train_init=train_init, args=args)
+    elif args.alg == 'FedCBO_Bilevel':
+        FedCBO = FedCBO_Bilevel_NN(train_init=train_init, args=args)
 
-            if args.seed == 0:
-                images_save_path = os.path.join(train_init.output_path, f'seed_{args.seed}')
-                make_dirs(dirname=images_save_path, rm=True)
-                for t in range(cbo.T):
-                    if t % 5 == 0:
-                        if args.opt_type == 'constrained':
-                            vis_constrained_set(t=t, images_save_path=images_save_path,
-                                                particle_positions=cbo.thetas_position[t],
-                                                consensus_point=cbo.consensus_point_position[t])
-                        else:
-                            particles_position_vis_1d(t=t,images_save_path=images_save_path,
-                                                  particle_positions_x_axis=cbo.I_beta_position[t],
-                                                  consensus_point_x_axis=cbo.consensus_point_position[t])
-                frames = []
-                for t in range(cbo.T):
-                    if t % 5 == 0:
-                        images_save_name = os.path.join(images_save_path, f'img_{t}.png')
-                        image = imageio.imread(images_save_name)
-                        frames.append(image)
-
-                gif_save_name = os.path.join(images_save_path, 'CBO_bilevel_OPT.gif')
-                imageio.mimsave(gif_save_name,  # output gif
-                                frames,  # array of input frames
-                                duration=100,
-                                loop=1)  # optional: frames per second
-
-    elif args.data_name in ['cifar10', 'emnist']:
-        os.environ['CUDA_VISBLE_DEVICES'] = args.gpu_ids
-        args.gpu_id_list = [int(s) for s in args.gpu_ids.split(',')]
-        args.cuda = not args.no_cuda and torch.cuda.is_available()
-        if args.alg == 'FedCBO':
-            FedCBO = FedCBO_NN(train_init=train_init, args=args)
-        elif args.alg == 'FedCBO_Bilevel':
-            FedCBO = FedCBO_Bilevel_NN(train_init=train_init, args=args)
-        elif args.alg == 'test':
-            test = FedCBO_Data_Init_Test(train_init=train_init, args=args)
-
-
-        FedCBO.train_with_comm()
-        logging.info(
-            'Average acc of local agents: {}'.format(torch.sum(FedCBO.store_test_acc) / FedCBO.store_test_acc.size(0)))
+    FedCBO.train_with_comm()
+    logging.info('Average acc of local agents: {}'.format(torch.sum(FedCBO.store_test_acc) / FedCBO.store_test_acc.size(0)))
 
 
 
