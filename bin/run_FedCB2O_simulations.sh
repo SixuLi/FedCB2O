@@ -8,7 +8,7 @@ SRC='src'
 ######## WITH ATTACK ########
 
 ####### FedCB2O for rotated EMNIST dataset with Agent Selections based on Probability #####
-for seed in 10 12 13
+for seed in 10
 do
  	python "${SRC}"/main.py \
  	--experiment_name "FedCB2O_rotated_emnist_alpha_2_temp_0.5_Gfunc_start_T_30_seed_${seed}_test" \

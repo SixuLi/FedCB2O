@@ -1,18 +1,51 @@
 import numpy as np
 import os
 import logging
+import logging.config
+import logging.handlers
+import multiprocessing as mp
+import threading
 import shutil
-
 import torch
 
+def listener_configurer(logfile):
+    logging.basicConfig(filename=logfile,
+                        level=logging.INFO,
+                        format='%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
+    logger = logging.getLogger()
+    logger.addHandler(logging.StreamHandler())
 
-def generate_data(data_name, num_data, args):
-    np.random.seed(args.seed)
+# Lister method for logging using a separate process
+def listener_process(logfile, queue):
+    listener_configurer(logfile)
+    while True:
+        try:
+            record = queue.get()
+            if record is None:  # We send this as a sentinel to tell the listener to quit.
+                break
+            logger = logging.getLogger(record.name)
+            logger.handle(record)  # No level or filter logic applied - just do it!
+        except Exception:
+            import sys, traceback
+            print('Whoops! Problem:', file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
 
-    if data_name == '1d_data':
-        data = np.random.normal(loc=0, scale=0.1, size=num_data)
+# Logging using a separate thread
+def logger_thread(q):
+    while True:
+        record = q.get()
+        if record is None:
+            break
+        logger = logging.getLogger(record.name)
+        logger.handle(record)
 
-        np.savez(os.path.join(args.data_path, args.data_name + '.npz'), data=data)
+def get_worker_logger(q):
+    qh = logging.handlers.QueueHandler(q)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(qh)
+    return logger
+
 
 def make_dirs(dirname, rm=False):
     if not os.path.exists(dirname):
@@ -27,32 +60,35 @@ class Init:
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
         self.output_path = os.path.join(args.result_path, args.experiment_name)
-        if args.data_name in ['synthetic_data']:
-            if args.seed == 0:
-                make_dirs(args.result_path)
-                make_dirs(args.data_path)
-                make_dirs(self.output_path)
-                args_state = {k: v for k, v in args._get_kwargs()}
-                with open(os.path.join(self.output_path, 'result.txt'), 'w') as f:
-                    print(args_state, file=f)
-                with open(os.path.join(self.output_path, 'check_state.txt'), 'w') as f:
-                    print(args_state, file=f)
-                # with open(os.path.join(self.output_path, 'CBO_result.txt'), 'w') as f:
-                #     print(args_state, file=f)
-        elif args.data_name in ['cifar10', 'emnist']:
-            if not args.load_checkpoint:
-                make_dirs(args.result_path)
-                make_dirs(args.data_path)
-                make_dirs(self.output_path)
-                args_state = {k: v for k, v in args._get_kwargs()}
-                with open(os.path.join(self.output_path, 'result.txt'), 'w') as f:
-                    print(args_state, file=f)
-                with open(os.path.join(self.output_path, 'check_state.txt'), 'w') as f:
-                    print(args_state, file=f)
-                with open(os.path.join(self.output_path, 'loss.txt'), 'w') as f:
-                    print(args_state, file=f)
-                with open(os.path.join(self.output_path, 'reward.txt'), 'w') as f:
-                    print(args_state, file=f)
+        if not args.load_checkpoint:
+            make_dirs(args.result_path)
+            make_dirs(args.data_path)
+            make_dirs(self.output_path)
+            args_state = {k: v for k, v in args._get_kwargs()}
+            with open(os.path.join(self.output_path, 'result.txt'), 'w') as f:
+                print(args_state, file=f)
+            with open(os.path.join(self.output_path, 'check_state.txt'), 'w') as f:
+                print(args_state, file=f)
+            with open(os.path.join(self.output_path, 'loss.txt'), 'w') as f:
+                print(args_state, file=f)
+            with open(os.path.join(self.output_path, 'reward.txt'), 'w') as f:
+                print(args_state, file=f)
+
+        # Queue setup for mp logging
+        self.q = mp.Manager().Queue(-1)
+        if self.use_thread_for_logging:
+            listener_configurer(self.logfile)  # When using threads
+
+    def start_logger(self):
+        if self.use_thread_for_logging:
+            self.lp = threading.Thread(target=logger_thread, args=(self.q,))
+        else:
+            self.lp = mp.Process(target=listener_process, args=(self.logfile, self.q))
+        self.lp.start()
+
+    def stop_logger(self):
+        self.q.put(None)
+        self.lp.join()
 
 
 

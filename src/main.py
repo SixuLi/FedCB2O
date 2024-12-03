@@ -89,7 +89,8 @@ if __name__ == '__main__':
     logging.info("Seed {}".format(args.seed))
 
     train_init = init.Init(args=args)
-
+    # Starts logger for multi processing
+    train_init.start_logger()
 
     os.environ['CUDA_VISBLE_DEVICES'] = args.gpu_ids
     args.gpu_id_list = [int(s) for s in args.gpu_ids.split(',')]
@@ -101,6 +102,9 @@ if __name__ == '__main__':
 
     FedCBO.train_with_comm()
     logging.info('Average acc of local agents: {}'.format(torch.sum(FedCBO.store_test_acc) / FedCBO.store_test_acc.size(0)))
+
+    # End logger for multi processing
+    train_init.stop_logger()
 
 
 

@@ -8,15 +8,21 @@ import math
 from scipy.stats import entropy
 
 import torch.utils.data
+from torch import q_per_channel_scales
+import torch.distributed.rpc as rpc
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 
+from src import init
 from src.model import CNN_EMNIST
 from src.dataset import MyEMNIST
 from src.utils.util import chunkify, split_list_uneven, AverageMeter
 
 import torch.multiprocessing as mp
+from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor
+import concurrent.futures as cf
 
 def get_optimizer(args, model):
     logging.info('Optimizer is {}'.format(args.optimizer))
@@ -598,14 +604,21 @@ class FedCBO_NN:
 
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
+            # os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
             logging.info(os.getcwd())
 
-            with mp.get_context('spawn').Pool() as pool:
-                logging.info('Begin the multiprocessing.')
-                results = pool.starmap(local_sgd_function_to_pass_to_mp,
-                                       [(agent_idx, self.agents[agent_idx], curr_list_train[i], self.args) for i, agent_idx in
-                                        enumerate(G_t)])
+            with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
+                                     max_workers=8,
+                                     initializer=init.get_worker_logger,
+                                     initargs=(self.train_init.q,)) as pool:
+                results = pool.map(local_sgd_function_to_pass_to_mp,
+                                   [(agent_idx, self.agents[agent_idx], curr_list_train[i], self.args) for i, agent_idx in enumerate(G_t)])
+
+            # with mp.get_context('spawn').Pool() as pool:
+            #     logging.info('Begin the multiprocessing.')
+            #     results = pool.starmap(local_sgd_function_to_pass_to_mp,
+            #                            [(agent_idx, self.agents[agent_idx], curr_list_train[i], self.args) for i, agent_idx in
+            #                             enumerate(G_t)])
                 logging.info('Check whether finished the multi-processing running.')
 
             for i, local_model in results:
@@ -614,6 +627,10 @@ class FedCBO_NN:
             logging.info('Finished multiprocessing part for {} agents'.format(numAgentsPassing))
             ending_local_sgd = time.time()
             logging.info('total elapsed time for local sgd = {}'.format(ending_local_sgd - starting_local_sgd))
+
+            logging.info(os.getcwd())
+
+            asdj
 
             # Local aggregation at time step t
             with open(os.path.join(self.train_init.output_path, 'check_state.txt'), 'a') as f:
