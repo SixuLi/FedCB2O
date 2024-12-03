@@ -25,7 +25,7 @@ from concurrent.futures import ProcessPoolExecutor
 import concurrent.futures as cf
 
 def get_optimizer(args, model):
-    logging.info('Optimizer is {}'.format(args.optimizer))
+    # logging.info('Optimizer is {}'.format(args.optimizer))
     if args.optimizer == 'Adam':
         return torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     elif args.optimizer == 'SimpleSGD':
@@ -43,7 +43,7 @@ def get_optimizer(args, model):
         raise NotImplementedError
 
 def get_lr_scheduler(args, optimizer):
-    logging.info('LR Scheduler is {}'.format(args.lr_scheduler))
+    # logging.info('LR Scheduler is {}'.format(args.lr_scheduler))
     if args.lr_scheduler == 'StepLR':
         return torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step_size,
                                                gamma=args.lr_gamma)
@@ -91,7 +91,7 @@ def mp_evaluate(data):
     # Using model_idx to load the nn we are going to evaluate.
     # Using data_idx to load the dataset we are going to use.
     model_idx, model, data_idx, dataloader, tag, args = data
-    logging.info("Eval: model: {} on dataset: {}".format(model_idx, data_idx))
+    # logging.info("Eval: model: {} on dataset: {}".format(model_idx, data_idx))
     num_classes = args.num_classes
 
     model.cuda()
@@ -133,7 +133,6 @@ def mp_evaluate(data):
             for i in range(len(labels)):
                 label = labels[i]
                 class_correct[label] += c[i].item()
-                # class_total[label] += 1
         if args.adversarial:
             # Get the indices of source_class in the batch
             indices_of_source_class = (labels == args.source_class).nonzero(as_tuple=False).squeeze()
@@ -616,11 +615,6 @@ class FedCBO_NN:
                 results = pool.map(local_sgd_function_to_pass_to_mp,
                                    [(agent_idx, self.agents[agent_idx], curr_list_train[i], self.args) for i, agent_idx in enumerate(G_t)])
 
-            # with mp.get_context('spawn').Pool() as pool:
-            #     logging.info('Begin the multiprocessing.')
-            #     results = pool.starmap(local_sgd_function_to_pass_to_mp,
-            #                            [(agent_idx, self.agents[agent_idx], curr_list_train[i], self.args) for i, agent_idx in
-            #                             enumerate(G_t)])
             logging.info('Check whether finished the multi-processing running.')
 
             for i, local_model in results:
@@ -733,11 +727,6 @@ class FedCBO_NN:
                 eval_results = pool.map(mp_evaluate,
                                [(model_idx, self.agents[model_idx], dataset_idx, curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args) for model_idx, dataset_idx in eval_list])
 
-            # with mp.get_context('spawn').Pool() as pool:
-            #     eval_results = pool.starmap(mp_evaluate,
-            #                                 [(model_idx, self.agents[model_idx], dataset_idx,
-            #                                   curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args)
-            #                                  for model_idx, dataset_idx in eval_list])
             logging.info('Multi-processing for model evaluation successes!!!!')
             for local_model in self.agents:
                 local_model.cuda()
@@ -861,10 +850,6 @@ class FedCBO_NN:
                 eval_results = pool.map(mp_evaluate,
                                [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args) for i in range(len(cur_agents))])
 
-            # with mp.get_context('spawn').Pool(processes=5) as pool:
-            #     eval_results = pool.starmap(mp_evaluate,
-            #                                 [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args)
-            #                                  for i in range(len(cur_agents))])
             for local_model in cur_agents:
                 local_model.cuda()
 
@@ -959,11 +944,6 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
                 eval_results = pool.map(mp_evaluate,
                                [(model_idx, self.agents[model_idx], dataset_idx, curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args) for model_idx, dataset_idx in eval_list])
 
-            # with mp.get_context('spawn').Pool() as pool:
-            #     eval_results = pool.starmap(mp_evaluate,
-            #                                 [(model_idx, self.agents[model_idx], dataset_idx,
-            #                                   curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args)
-            #                                  for model_idx, dataset_idx in eval_list])
             logging.info('Multi-processing for model evaluation successes!!!!')
             for local_model in self.agents:
                 local_model.cuda()
@@ -1140,10 +1120,6 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
                 eval_results = pool.map(mp_evaluate,
                                [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args) for i in range(len(cur_agents))])
 
-            # with mp.get_context('spawn').Pool(processes=5) as pool:
-            #     eval_results = pool.starmap(mp_evaluate,
-            #                                 [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args)
-            #                                  for i in range(len(cur_agents))])
             for local_model in cur_agents:
                 local_model.cuda()
 
