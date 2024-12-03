@@ -608,7 +608,7 @@ class FedCBO_NN:
             logging.info(os.getcwd())
 
             with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
-                                     max_workers=8,
+                                     max_workers=4,
                                      initializer=init.get_worker_logger,
                                      initargs=(self.train_init.q,)) as pool:
                 results = pool.map(local_sgd_function_to_pass_to_mp,
