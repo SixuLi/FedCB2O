@@ -61,7 +61,7 @@ class Init:
         torch.manual_seed(args.seed)
         # Default option is to use another thread for logging. Set to false if
         # you want to use another process for logging.
-        self.use_thread_for_logging = True
+        self.use_thread_for_logging = False
         self.output_path = os.path.join(args.result_path, args.experiment_name)
         self.checkpoint_path = os.path.join(self.output_path, 'checkpoint.pt')
         self.logfile = os.path.join(self.output_path, 'debug.log')

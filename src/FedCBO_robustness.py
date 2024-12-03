@@ -619,7 +619,7 @@ class FedCBO_NN:
             #     results = pool.starmap(local_sgd_function_to_pass_to_mp,
             #                            [(agent_idx, self.agents[agent_idx], curr_list_train[i], self.args) for i, agent_idx in
             #                             enumerate(G_t)])
-                logging.info('Check whether finished the multi-processing running.')
+            logging.info('Check whether finished the multi-processing running.')
 
             for i, local_model in results:
                 self.agents[i] = copy.deepcopy(local_model)
