@@ -605,8 +605,6 @@ class FedCBO_NN:
 
             for local_model in self.agents:
                 local_model.cpu()
-            # os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
-            logging.info(os.getcwd())
 
             with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
                                      max_workers=8,
@@ -715,10 +713,6 @@ class FedCBO_NN:
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            # os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
-            logging.info(os.getcwd())
-
-            logging.info('Check multi-processing for model evaluation.')
 
             with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
                                      max_workers=8,
@@ -727,7 +721,7 @@ class FedCBO_NN:
                 eval_results = pool.map(mp_evaluate,
                                [(model_idx, self.agents[model_idx], dataset_idx, curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args) for model_idx, dataset_idx in eval_list])
 
-            logging.info('Multi-processing for model evaluation successes!!!!')
+            logging.info('Multi-processing for model evaluation successes!')
             for local_model in self.agents:
                 local_model.cuda()
             eval_results_dict = [{} for _ in self.benign_agents_indices]
@@ -840,8 +834,6 @@ class FedCBO_NN:
             curr_list_test = [self.get_agent_dataloader(i, tag='test') for i in self.agents_idx]
             for local_model in cur_agents:
                 local_model.cpu()
-            # os.chdir('/content/drive/MyDrive/FedCB2O')
-            logging.info(os.getcwd())
 
             with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
                                      max_workers=5,
@@ -932,10 +924,6 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            # os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
-            logging.info(os.getcwd())
-
-            logging.info('Check multi-processing for model evaluation.')
 
             with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
                                      max_workers=8,
@@ -944,7 +932,7 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
                 eval_results = pool.map(mp_evaluate,
                                [(model_idx, self.agents[model_idx], dataset_idx, curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args) for model_idx, dataset_idx in eval_list])
 
-            logging.info('Multi-processing for model evaluation successes!!!!')
+            logging.info('Multi-processing for model evaluation successes!')
             for local_model in self.agents:
                 local_model.cuda()
             eval_results_dict = [{} for _ in self.benign_agents_indices]
@@ -1110,8 +1098,6 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             curr_list_test = [self.get_agent_dataloader(i, tag='test') for i in self.agents_idx]
             for local_model in cur_agents:
                 local_model.cpu()
-            # os.chdir('/content/drive/MyDrive/FedCB2O')
-            logging.info(os.getcwd())
 
             with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
                                      max_workers=5,
