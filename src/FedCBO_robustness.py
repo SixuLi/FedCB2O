@@ -55,7 +55,8 @@ def get_lr_scheduler(args, optimizer):
     else:
         raise NotImplementedError
 
-def local_sgd_function_to_pass_to_mp(agent_idx, local_model, dataloader, args):
+def local_sgd_function_to_pass_to_mp(data):
+    agent_idx, local_model, dataloader, args = data
     if agent_idx in args.benign_agents_indices:
         num_epochs = args.benign_agent_local_epochs
     else:
@@ -86,9 +87,10 @@ def local_sgd_function_to_pass_to_mp(agent_idx, local_model, dataloader, args):
     local_model.cpu()
     return agent_idx, local_model
 
-def mp_evaluate(model_idx, model, data_idx, dataloader, tag, args):
+def mp_evaluate(data):
     # Using model_idx to load the nn we are going to evaluate.
     # Using data_idx to load the dataset we are going to use.
+    model_idx, model, data_idx, dataloader, tag, args = data
     logging.info("Eval: model: {} on dataset: {}".format(model_idx, data_idx))
     num_classes = args.num_classes
 
