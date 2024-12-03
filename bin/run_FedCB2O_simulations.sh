@@ -11,7 +11,7 @@ SRC='src'
 for seed in 10 12 13
 do
  	python "${SRC}"/main.py \
- 	--experiment_name "FedCB2O_rotated_emnist_alpha_2_temp_0.5_Gfunc_start_T_40_seed_${seed}" \
+ 	--experiment_name "FedCB2O_rotated_emnist_alpha_2_temp_0.5_Gfunc_start_T_30_seed_${seed}_test" \
  	--data_name 'emnist' \
  	--num_classes 47 \
  	--alg 'FedCBO_Bilevel' \
