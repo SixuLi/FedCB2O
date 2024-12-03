@@ -610,7 +610,7 @@ class FedCBO_NN:
             logging.info(os.getcwd())
 
             with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
-                                     max_workers=4,
+                                     max_workers=8,
                                      initializer=init.get_worker_logger,
                                      initargs=(self.train_init.q,)) as pool:
                 results = pool.map(local_sgd_function_to_pass_to_mp,
@@ -630,9 +630,6 @@ class FedCBO_NN:
             ending_local_sgd = time.time()
             logging.info('total elapsed time for local sgd = {}'.format(ending_local_sgd - starting_local_sgd))
 
-            logging.info(os.getcwd())
-
-            asdj
 
             # Local aggregation at time step t
             with open(os.path.join(self.train_init.output_path, 'check_state.txt'), 'a') as f:
@@ -724,16 +721,23 @@ class FedCBO_NN:
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
+            # os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
             logging.info(os.getcwd())
 
             logging.info('Check multi-processing for model evaluation.')
 
-            with mp.get_context('spawn').Pool() as pool:
-                eval_results = pool.starmap(mp_evaluate,
-                                            [(model_idx, self.agents[model_idx], dataset_idx,
-                                              curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args)
-                                             for model_idx, dataset_idx in eval_list])
+            with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
+                                     max_workers=8,
+                                     initializer=init.get_worker_logger,
+                                     initargs=(self.train_init.q,)) as pool:
+                eval_results = pool.map(mp_evaluate,
+                               [(model_idx, self.agents[model_idx], dataset_idx, curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args) for model_idx, dataset_idx in eval_list])
+
+            # with mp.get_context('spawn').Pool() as pool:
+            #     eval_results = pool.starmap(mp_evaluate,
+            #                                 [(model_idx, self.agents[model_idx], dataset_idx,
+            #                                   curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args)
+            #                                  for model_idx, dataset_idx in eval_list])
             logging.info('Multi-processing for model evaluation successes!!!!')
             for local_model in self.agents:
                 local_model.cuda()
@@ -847,12 +851,20 @@ class FedCBO_NN:
             curr_list_test = [self.get_agent_dataloader(i, tag='test') for i in self.agents_idx]
             for local_model in cur_agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O')
+            # os.chdir('/content/drive/MyDrive/FedCB2O')
             logging.info(os.getcwd())
-            with mp.get_context('spawn').Pool(processes=5) as pool:
-                eval_results = pool.starmap(mp_evaluate,
-                                            [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args)
-                                             for i in range(len(cur_agents))])
+
+            with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
+                                     max_workers=5,
+                                     initializer=init.get_worker_logger,
+                                     initargs=(self.train_init.q,)) as pool:
+                eval_results = pool.map(mp_evaluate,
+                               [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args) for i in range(len(cur_agents))])
+
+            # with mp.get_context('spawn').Pool(processes=5) as pool:
+            #     eval_results = pool.starmap(mp_evaluate,
+            #                                 [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args)
+            #                                  for i in range(len(cur_agents))])
             for local_model in cur_agents:
                 local_model.cuda()
 
@@ -935,16 +947,23 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             curr_list_validation = [self.get_agent_dataloader(i, tag='val') for i in self.benign_agents_indices]
             for local_model in self.agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
+            # os.chdir('/content/drive/MyDrive/FedCB2O') ### TODO: UPDATE!!!!
             logging.info(os.getcwd())
 
             logging.info('Check multi-processing for model evaluation.')
 
-            with mp.get_context('spawn').Pool() as pool:
-                eval_results = pool.starmap(mp_evaluate,
-                                            [(model_idx, self.agents[model_idx], dataset_idx,
-                                              curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args)
-                                             for model_idx, dataset_idx in eval_list])
+            with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
+                                     max_workers=8,
+                                     initializer=init.get_worker_logger,
+                                     initargs=(self.train_init.q,)) as pool:
+                eval_results = pool.map(mp_evaluate,
+                               [(model_idx, self.agents[model_idx], dataset_idx, curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args) for model_idx, dataset_idx in eval_list])
+
+            # with mp.get_context('spawn').Pool() as pool:
+            #     eval_results = pool.starmap(mp_evaluate,
+            #                                 [(model_idx, self.agents[model_idx], dataset_idx,
+            #                                   curr_list_validation[np.argwhere(self.benign_agents_indices == dataset_idx)[0][0]], 'val', self.args)
+            #                                  for model_idx, dataset_idx in eval_list])
             logging.info('Multi-processing for model evaluation successes!!!!')
             for local_model in self.agents:
                 local_model.cuda()
@@ -1111,12 +1130,20 @@ class FedCBO_Bilevel_NN(FedCBO_NN):
             curr_list_test = [self.get_agent_dataloader(i, tag='test') for i in self.agents_idx]
             for local_model in cur_agents:
                 local_model.cpu()
-            os.chdir('/content/drive/MyDrive/FedCB2O')
+            # os.chdir('/content/drive/MyDrive/FedCB2O')
             logging.info(os.getcwd())
-            with mp.get_context('spawn').Pool(processes=5) as pool:
-                eval_results = pool.starmap(mp_evaluate,
-                                            [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args)
-                                             for i in range(len(cur_agents))])
+
+            with ProcessPoolExecutor(mp_context=mp.get_context('spawn'),
+                                     max_workers=5,
+                                     initializer=init.get_worker_logger,
+                                     initargs=(self.train_init.q,)) as pool:
+                eval_results = pool.map(mp_evaluate,
+                               [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args) for i in range(len(cur_agents))])
+
+            # with mp.get_context('spawn').Pool(processes=5) as pool:
+            #     eval_results = pool.starmap(mp_evaluate,
+            #                                 [(i, cur_agents[i], i, curr_list_test[i], 'test', self.args)
+            #                                  for i in range(len(cur_agents))])
             for local_model in cur_agents:
                 local_model.cuda()
 
