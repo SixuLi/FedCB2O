@@ -12,8 +12,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 
-from src.model import CNN_CIFAR10, CNN_EMNIST
-from src.dataset import RotatedCIFAR10, CustomDataset, MyCIFAR10, MyEMNIST
+from src.model import CNN_EMNIST
+from src.dataset import MyEMNIST
 from src.utils.util import chunkify, split_list_uneven, AverageMeter
 
 import torch.multiprocessing as mp
@@ -225,9 +225,7 @@ class FedCBO_NN:
                 for model in self.agents:
                     model.cuda()
         else:
-            if self.args.model_name == 'CNN_CIFAR10':
-                model = CNN_CIFAR10()
-            elif self.args.model_name == 'CNN_EMNIST':
+            if self.args.model_name == 'CNN_EMNIST':
                 model = CNN_EMNIST(num_classes=self.args.num_classes)
             else:
                 raise NotImplementedError

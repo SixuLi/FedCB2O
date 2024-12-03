@@ -9,7 +9,7 @@ SRC='src'
 for seed in 10 12 16
 do
  	python "${SRC}"/main.py \
- 	--experiment_name "DFedAvg_emnist_oracle_min_agents_mali_prop_0.3_SC_prop_1.0_seed_${seed}" \
+ 	--experiment_name "DFedAvg_emnist_oracle_min_agents_mali_prop_0.3_SC_prop_1.0_seed_${seed}_test" \
  	--data_name 'emnist' \
  	--num_classes 47 \
  	--adversarial \
