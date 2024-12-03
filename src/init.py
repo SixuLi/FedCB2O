@@ -63,6 +63,8 @@ class Init:
         # you want to use another process for logging.
         self.use_thread_for_logging = True
         self.output_path = os.path.join(args.result_path, args.experiment_name)
+        self.checkpoint_path = os.path.join(self.output_path, 'checkpoint.pt')
+        self.logfile = os.path.join(self.output_path, 'debug.log')
         if not args.load_checkpoint:
             make_dirs(args.result_path)
             make_dirs(args.data_path)
@@ -76,6 +78,8 @@ class Init:
                 print(args_state, file=f)
             with open(os.path.join(self.output_path, 'reward.txt'), 'w') as f:
                 print(args_state, file=f)
+            if os.path.isfile(self.logfile):
+                os.remove(self.logfile)
 
         # Queue setup for mp logging
         self.q = mp.Manager().Queue(-1)
