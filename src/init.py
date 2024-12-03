@@ -59,6 +59,9 @@ class Init:
     def __init__(self, args):
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
+        # Default option is to use another thread for logging. Set to false if
+        # you want to use another process for logging.
+        self.use_thread_for_logging = True
         self.output_path = os.path.join(args.result_path, args.experiment_name)
         if not args.load_checkpoint:
             make_dirs(args.result_path)
