@@ -337,25 +337,28 @@ class FedCBO_NN:
                 train_idx = None
                 val_idx = None
                 for i in range(self.args.num_classes):
-                    class_i_indices = (targets == i).nonzero(as_tuple=False).squeeze()
-                    perturbed_class_i_indices = np.random.permutation(class_i_indices)
+                    if len(targets == i) == 0:
+                        continue
+                    else:
+                        class_i_indices = (targets == i).nonzero(as_tuple=False).squeeze()
+                        perturbed_class_i_indices = np.random.permutation(class_i_indices)
 
-                    # Remove 1-prop_source_class proportion of data points in source_class
-                    if i == self.args.source_class:
-                        perturbed_class_i_indices = perturbed_class_i_indices[:int(len(perturbed_class_i_indices)*self.args.prop_source_class)]
-                    if self.args.val_set_prop > 0:
-                        val_set_class_i = max(int(self.args.val_set_prop * len(class_i_indices)), 1)
-                        train_class_i_idx = perturbed_class_i_indices[:-val_set_class_i]
-                        val_class_i_idx = perturbed_class_i_indices[-val_set_class_i:]
-                    else:
-                        train_class_i_idx = perturbed_class_i_indices
-                        val_class_i_idx = np.array([-1])
-                    if train_idx is None:
-                        train_idx = train_class_i_idx
-                        val_idx = val_class_i_idx
-                    else:
-                        train_idx = np.concatenate((train_idx, train_class_i_idx), axis=None)
-                        val_idx = np.concatenate((val_idx, val_class_i_idx), axis=None)
+                        # Remove 1-prop_source_class proportion of data points in source_class
+                        if i == self.args.source_class:
+                            perturbed_class_i_indices = perturbed_class_i_indices[:int(len(perturbed_class_i_indices)*self.args.prop_source_class)]
+                        if self.args.val_set_prop > 0:
+                            val_set_class_i = max(int(self.args.val_set_prop * len(class_i_indices)), 0)
+                            train_class_i_idx = perturbed_class_i_indices[:-val_set_class_i]
+                            val_class_i_idx = perturbed_class_i_indices[-val_set_class_i:]
+                        else:
+                            train_class_i_idx = perturbed_class_i_indices
+                            val_class_i_idx = np.array([-1])
+                        if train_idx is None:
+                            train_idx = train_class_i_idx
+                            val_idx = val_class_i_idx
+                        else:
+                            train_idx = np.concatenate((train_idx, train_class_i_idx), axis=None)
+                            val_idx = np.concatenate((val_idx, val_class_i_idx), axis=None)
 
                 train_data_indices.append(data_indices[train_idx])
                 val_data_indices.append(data_indices[val_idx])
