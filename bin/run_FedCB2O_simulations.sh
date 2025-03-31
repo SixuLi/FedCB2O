@@ -21,7 +21,7 @@ do
  	--adversarial_aug_mali \
  	--num_local_data 500 \
  	--num_mali_local_data 1200 \
- 	--malicious_prop 0.5 \
+ 	--malicious_prop 0.2 \
  	--prop_source_class 1.0 \
  	--target_class 0 \
  	--source_class 24 \
