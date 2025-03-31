@@ -337,7 +337,7 @@ class FedCBO_NN:
                 train_idx = None
                 val_idx = None
                 for i in range(self.args.num_classes):
-                    class_i_indices = (targets == i).nonzero(as_tuple=False).squeeze()
+                    class_i_indices = (targets == i).nonzero(as_tuple=True)[0]
                     if len(class_i_indices) > 0:
                         perturbed_class_i_indices = np.random.permutation(class_i_indices)
 
