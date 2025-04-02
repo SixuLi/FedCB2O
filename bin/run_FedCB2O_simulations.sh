@@ -8,20 +8,20 @@ SRC='src'
 ######## WITH ATTACK ########
 
 ####### FedCB2O for rotated EMNIST dataset with Agent Selections based on Probability #####
-for seed in 16
+for seed in 10 12 16
 do
  	python "${SRC}"/main.py \
- 	--experiment_name "FedCB2O_rotated_emnist_Gfunc_start_T_30_mali_prop_0.4_seed_${seed}" \
+ 	--experiment_name "FedCB2O_rotated_emnist_Gfunc_start_T_0_mali_prop_0.2_seed_${seed}" \
  	--data_name 'emnist' \
  	--num_classes 47 \
  	--alg 'FedCBO_Bilevel' \
  	--G_func 'max_diff' \
- 	--G_func_starting_time 30 \
+ 	--G_func_starting_time 0 \
  	--adversarial \
  	--adversarial_aug_mali \
  	--num_local_data 500 \
  	--num_mali_local_data 1200 \
- 	--malicious_prop 0.4 \
+ 	--malicious_prop 0.2 \
  	--prop_source_class 1.0 \
  	--target_class 0 \
  	--source_class 24 \
