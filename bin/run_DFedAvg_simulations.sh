@@ -9,7 +9,7 @@ SRC='src'
 for seed in 10 12 16
 do
  	python "${SRC}"/main.py \
- 	--experiment_name "DFedAvg_emnist_oracle_min_agents_mali_prop_0.2_seed_${seed}" \
+ 	--experiment_name "DFedAvg_emnist_oracle_min_agents_mali_prop_0.3_seed_${seed}" \
  	--data_name 'emnist' \
  	--num_classes 47 \
  	--adversarial \
@@ -17,7 +17,7 @@ do
  	--remove_malicious_agents \
  	--num_local_data 500 \
  	--num_mali_local_data 1200 \
- 	--malicious_prop 0.2 \
+ 	--malicious_prop 0.3 \
  	--prop_source_class 1.0 \
  	--target_class 0 \
  	--source_class 24 \
