@@ -11,7 +11,7 @@ SRC='src'
 for seed in 11 13 14 15 17 18 19
 do
  	python "${SRC}"/main.py \
- 	--experiment_name "FedCB2O_rotated_emnist_Gfunc_start_T_0_mali_prop_0.4_seed_${seed}" \
+ 	--experiment_name "FedCB2O_rotated_emnist_Gfunc_start_T_0_mali_prop_0.5_seed_${seed}" \
  	--data_name 'emnist' \
  	--num_classes 47 \
  	--alg 'FedCBO_Bilevel' \
@@ -21,7 +21,7 @@ do
  	--adversarial_aug_mali \
  	--num_local_data 500 \
  	--num_mali_local_data 1200 \
- 	--malicious_prop 0.4 \
+ 	--malicious_prop 0.5 \
  	--prop_source_class 1.0 \
  	--target_class 0 \
  	--source_class 24 \
